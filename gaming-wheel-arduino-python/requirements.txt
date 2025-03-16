@@ -1,4 +1,0 @@
-F1TelemetryClient
-serialport
-threading
-json
