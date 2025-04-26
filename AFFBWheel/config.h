@@ -25,6 +25,7 @@
 
 //---------------------------Steering axis-------------------------------
 //different types of wheel sensor. Choose only one!
+//#define STEER_TYPE POTENTIOMETER 
 #define STEER_TYPE ST_ENCODER
 //#define STEER_TYPE ST_TLE5010
 //#define STEER_TYPE ST_AS5600
@@ -44,7 +45,7 @@
 //wheel sensor bitdepth. Not supposed to be changed.
 #define STEER_BITDEPTH 13
 //default wheel range in degrees.
-#define WHEEL_RANGE_DEFAULT 900
+#define WHEEL_RANGE_DEFAULT 540
 
 //transmission ratio (see readme)
 //#define STEER_TM_RATIO_ENABLED       //Uncomment to enable feature
@@ -76,9 +77,10 @@
 
 //settings for internal ADC
 //analog axes pins
-#define PIN_ACC     A0
-#define PIN_BRAKE   A1
-#define PIN_CLUTCH  A2
+
+#define PIN_ACC     A1
+#define PIN_BRAKE   A2
+#define PIN_CLUTCH  A0
 
 //#define AA_PULLUP              //internal ADC with pullups for analog axes
 //#define AA_PULLUP_LINEARIZE    //uncomment if need to linearize
@@ -93,13 +95,13 @@
 #define MCP3204_CH_CLUTCH  2
 
 //settings for MCP3204 (SPI)
-#define MCP3204_PIN_CS    A0
+//#define MCP3204_PIN_CS    A0
 
 //settings for MCP3204 (4wire)
 //v1
-#define MCP3204_4W_PIN_SCK  A0
-#define MCP3204_4W_PIN_MOSI 16
-#define MCP3204_4W_PIN_MISO 14
+//#define MCP3204_4W_PIN_SCK  A0
+//#define MCP3204_4W_PIN_MOSI 16
+//#define MCP3204_4W_PIN_MISO 14
 
 //v2 
 //#define MCP3204_4W_PIN_SCK  15
@@ -172,17 +174,18 @@
 
 
 //analog pin buttons
-//#define APB
-#define APB_PIN        A11
-#define APB_BTN_COUNT  2
-#define APB_VALUES     32,96
+#define APB
+#define APB_PIN        A4
+#define APB_BTN_COUNT  6
+#define APB_VALUES     0,83,125,151,169,181
 #define APB_TOLERANCE  10
-#define APB_BTNS       25,26
+#define APB_BTNS       10,11,12,13,14,15
 
 //buttons directly connected to pins 
-//#define DPB        //Enable
-#define DPB_PINS       3,4
+#define DPB        //Enable
+#define DPB_PINS       2,3
 #define DPB_1ST_BTN    1
+
 
 //button matrix
 //#define BM            //enable
@@ -192,16 +195,16 @@
 
 
 //analog H-shifter
-//#define ASHIFTER
-#define ASHIFTER_PINX     A4
-#define ASHIFTER_PINY     A5
-#define ASHIFTER_POS      8   //6 or 8 positions
-#define ASHIFTER_Y1       50 
+//#define ASHIFTER                //uncomment to enable feature
+#define ASHIFTER_PINX     A4    //analog pin for potentiometer X
+#define ASHIFTER_PINY     A5    //analog pin for potentiometer Y
+#define ASHIFTER_POS      8     //number of positions, 6 or 8
+#define ASHIFTER_Y1       50    //zone bounds (0-255)
 #define ASHIFTER_Y2       200
 #define ASHIFTER_X1       64  
 #define ASHIFTER_X2       128  
-#define ASHIFTER_X3       192  
-#define ASHIFTER_1ST_BTN  25
+#define ASHIFTER_X3       192
+#define ASHIFTER_1ST_BTN  25    
 
 //Hat switch
 //#define HATSWITCH
@@ -212,10 +215,11 @@
 #define HAT_CLR_BTNS   //clear buttons state
 
 //----------------------------FFB settings-------------------------------
-//#define MOTOR_ENABLE_PIN      5  //if is set, selected pin will output 1 when FFB is active and 0 otherwise.
+#define MOTOR_ENABLE_PIN_WATCH      5  //if is set, selected pin will output 1 when FFB is active and 0 otherwise.
+#define MOTOR_ENABLE_PIN_ANTI_WATCH      6
 
-//default FFB PWM bitdepth
-#define DEFAULT_FFB_BITDEPTH  9   //15.6 KHz
+//default FFB PWM bitdepthé  
+#define DEFAULT_FFB_BITDEPTH     9
 
 //Effect parameters
 #define DEFAULT_MAX_VELOCITY        500
@@ -231,4 +235,5 @@
 #define AFC_TRESHOLD  10                        //Minimum position change to detect movement
 //#define AFC_NORANGE                           //Uncomment to disable range setting
 #define AFC_RANGE_FIX 1                         //range will be decreased by this value (in degrees), to prevent wheel kicking on limiters.
-#define AFC_BUTTON    0                         //Button # to start (1-32, 0 if not needed)
+#define AFC_BUTTON    0    
+                     //Button # to start (1-32, 0 if not needed)

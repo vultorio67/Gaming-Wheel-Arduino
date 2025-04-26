@@ -22,6 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+
+//rouge bleu orange et marron
+
 #include <SPI.h>
 #include <EEPROM.h>
 #include <digitalWriteFast.h>         //https://github.com/NicksonYap/digitalWriteFast
@@ -156,6 +159,16 @@ void autoFindCenter(int force=AFC_FORCE, int period=AFC_PERIOD, int16_t treshold
   }
 #endif
 
+
+//analogReadFast(PIN_WHEEL)
+
+#if STEER_TYPE == POTENTIOMETER
+  #define GET_WHEEL_POS ((int32_t)analogReadFast(PIN_WHEEL))
+  #define CENTER_WHEEL 
+  #define SET_WHEEL_POSITION(val) 
+
+#endif           
+
 #if STEER_TYPE == ST_ENCODER
   #include <Encoder.h>        //https://github.com/PaulStoffregen/Encoder
   Encoder encoder(ENCODER_PIN1, ENCODER_PIN2);
@@ -232,8 +245,10 @@ void autoFindCenter(int force=AFC_FORCE, int period=AFC_PERIOD, int16_t treshold
 
 void setup() {
 
-  Serial.begin(SERIAL_BAUDRATE);
-  Serial.setTimeout(50);
+  Serial.begin(9600);
+  //Serial.setTimeout(50);
+  Serial.println("f");
+
 
   //Steering axis sensor setup
   SETUP_WHEEL_SENSOR;
@@ -344,9 +359,12 @@ void mainLoop() {
 
   uint16_t t[5];
 
+  Serial.println(digitalRead(6));
+
   //Gathering data and measuring time
   if (timing)
       {
+        Serial.println("test");
         t[0]=micros();
         wheel.axisWheel->setValue(GET_WHEEL_POS);
         t[1]=micros();
@@ -365,6 +383,7 @@ void mainLoop() {
         wheel.axisWheel->setValue(GET_WHEEL_POS);
         readAnalogAxes();
         readButtons();
+        Serial.println(analogReadFast(A5));
         processUsbCmd();
         wheel.update();
         processFFB();
@@ -596,7 +615,7 @@ void processUsbCmd()
 
           //commands
           case 20: //load settings from EEPROM
-              load();
+              load(); 
             break;
           case 21: //save settings to EEPROM
               save();
@@ -732,12 +751,12 @@ int16_t  MCP3204_SPI_read(uint8_t channel)
 {
   int16_t val;
   
-  digitalWriteFast(MCP3204_PIN_CS, 0);
+  //digitalWriteFast(MCP3204_PIN_CS, 0);
   SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   SPI.transfer(0b00000110);
   val=SPI.transfer16(channel<<14) & 0x0FFF;
   SPI.endTransaction();
-  digitalWriteFast(MCP3204_PIN_CS, 1);
+  //digitalWriteFast(MCP3204_PIN_CS, 1);
   
   return val;
 }
@@ -746,55 +765,55 @@ int16_t  MCP3204_SPI_read(uint8_t channel)
 int16_t MCP3204_BB_read(uint8_t channel)
 {
     #if (MCP3204_4W_PIN_MOSI==MCP3204_4W_PIN_MISO)
-    pinModeFast(MCP3204_4W_PIN_MOSI, OUTPUT); 
+   // pinModeFast(MCP3204_4W_PIN_MOSI, OUTPUT); 
     #endif
        
-    digitalWriteFast(MCP3204_4W_PIN_MOSI, 1);
+   // digitalWriteFast(MCP3204_4W_PIN_MOSI, 1);
     
     //start bit
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
 
     //single
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
 
     //d2 
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
 
     //d1 and d0
     if (channel & 0b00000010)
       {
-        digitalWriteFast(MCP3204_4W_PIN_MOSI, 1);
+     //   digitalWriteFast(MCP3204_4W_PIN_MOSI, 1);
       }
     else
       {
-        digitalWriteFast(MCP3204_4W_PIN_MOSI, 0);
+       // digitalWriteFast(MCP3204_4W_PIN_MOSI, 0);
       }
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+   // digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+   // digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
 
     if (channel & 0b00000001)
       {
-        digitalWriteFast(MCP3204_4W_PIN_MOSI, 1);
+      //  digitalWriteFast(MCP3204_4W_PIN_MOSI, 1);
       }
     else
       {
-        digitalWriteFast(MCP3204_4W_PIN_MOSI, 0);
+        //digitalWriteFast(MCP3204_4W_PIN_MOSI, 0);
       }
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
 
     //skip 2 clock
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
     
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-    digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+    //digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
 
     #if (MCP3204_4W_PIN_MOSI==MCP3204_4W_PIN_MISO)
-    pinModeFast(MCP3204_4W_PIN_MISO, INPUT);
+    //pinModeFast(MCP3204_4W_PIN_MISO, INPUT);
     #endif
     
     //read 12bit answer
@@ -802,11 +821,11 @@ int16_t MCP3204_BB_read(uint8_t channel)
     int16_t b=0b0000100000000000;
     do{
       
-       if (digitalReadFast(MCP3204_4W_PIN_MISO))
-          data |= b;
+      /* if (digitalReadFast(MCP3204_4W_PIN_MISO))
+          data |= b;*/
       
-       digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
-       digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
+       //digitalWriteFast(MCP3204_4W_PIN_SCK, 1);
+       //digitalWriteFast(MCP3204_4W_PIN_SCK, 0);
     }while(b>>=1);
     
     return data;

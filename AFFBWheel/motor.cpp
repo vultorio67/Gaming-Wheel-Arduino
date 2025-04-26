@@ -1,3 +1,4 @@
+#include "Arduino.h"
 #include "motor.h"
 
 void Motor::begin()
@@ -13,9 +14,14 @@ void Motor::begin()
   pinMode(9, OUTPUT);
   pinMode(10, OUTPUT);
 
-  #ifdef MOTOR_ENABLE_PIN
-    pinMode(MOTOR_ENABLE_PIN, OUTPUT);
-    digitalWriteFast(MOTOR_ENABLE_PIN, 0);
+  #ifdef MOTOR_ENABLE_PIN_WATCH
+    pinMode(MOTOR_ENABLE_PIN_WATCH, OUTPUT);
+    digitalWriteFast(MOTOR_ENABLE_PIN_WATCH, 0);
+  #endif
+
+  #ifdef MOTOR_ENABLE_PIN_ANTI_WATCH
+    pinMode(MOTOR_ENABLE_PIN_ANTI_WATCH, OUTPUT);
+    digitalWriteFast(MOTOR_ENABLE_PIN_ANTI_WATCH, 0);
   #endif
 }
 
@@ -24,28 +30,37 @@ void Motor::setForce(int16_t force)
 {
   force=constrain(force,-16383,16383);
 
-  #ifdef MOTOR_ENABLE_PIN
-  if (force!=0)
-    digitalWriteFast(MOTOR_ENABLE_PIN, 1)
+  #ifdef MOTOR_ENABLE_PIN_WATCH || MOTOR_ENABLE_PIN_ANTI_WATCH
+  if (force<0)
+  {
+    delayMicroseconds(1000);
+    digitalWriteFast(MOTOR_ENABLE_PIN_ANTI_WATCH, 0);
+    digitalWriteFast(MOTOR_ENABLE_PIN_WATCH, 1);
+  }
+  else if(force>0)
+  {
+    delayMicroseconds(1000);
+    digitalWriteFast(MOTOR_ENABLE_PIN_ANTI_WATCH, 1);
+    digitalWriteFast(MOTOR_ENABLE_PIN_WATCH, 0);
+  }
   else
-    digitalWriteFast(MOTOR_ENABLE_PIN, 0);
+  {
+    OCR1A=0;
+  }
   #endif
 
   if (force>0)
   {
     OCR1A=(1+force)>>bitShift;
-    OCR1B=0;
   }
-  else 
-  if (force<0)  
+
+  else if (force<0)  
   {
-    OCR1A=0;
-    OCR1B=(1-force)>>bitShift;
+    OCR1A=(1-force)>>bitShift;
   }
   else
   {
     OCR1A=0;
-    OCR1B=0;
   }
 }
 
