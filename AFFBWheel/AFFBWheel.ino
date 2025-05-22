@@ -35,6 +35,13 @@ SOFTWARE.
 #include "motor.h"
 #include "settings.h"
 
+#include <Wire.h>
+
+//#include <Wire.h>
+//#include <Adafruit_MCP23X17.h>
+
+//Adafruit_MCP23X17 mcp;
+
 #define AFFB_VER "1.0.2"
 
 //global variables
@@ -89,75 +96,15 @@ uint8_t debounceCount=0;
   static const int8_t ADS1015_channels[]={ADS1015_CH_ACC, ADS1015_CH_BRAKE, ADS1015_CH_CLUTCH};
 #endif
 
-#if ((PEDALS_TYPE==PT_MCP3204_4W) || (PEDALS_TYPE==PT_MCP3204_SPI))
-  #define DEFAULT_AA_MIN 0
-  #define DEFAULT_AA_MAX 4095
-#endif
-
-#if PEDALS_TYPE == PT_ADS7828
-  #include "bb_i2c.h"
-  #define DEFAULT_AA_MIN 0
-  #define DEFAULT_AA_MAX 4095
-
-  ADS7828_BBI2C ads7828;
-#endif
 
 //constants and definions for buttons
 
-#if BUTTONS_TYPE == BT_MCP23017
-  #include "bb_i2c.h"
-  MCP23017_BBI2C mcp23017_1;
-  MCP23017_BBI2C mcp23017_2;
-#endif
-
-#if BUTTONS_TYPE == BT_PCF857x
-  #include "bb_i2c.h"
-
-  PCF857x_BBI2C pcf857x[4];
-#endif
 
 void load(bool defaults=false);
 void autoFindCenter(int force=AFC_FORCE, int period=AFC_PERIOD, int16_t treshold=AFC_TRESHOLD);
 
 //------------------------ steering wheel sensor ----------------------------
-#if STEER_TYPE == ST_TLE5010
-  #include <TLE5010.h>              //https://github.com/vsulako/TLE5010
-  #include "multiturn.h"
-  
-  TLE5010_SPI sensor(TLE5010_PIN_CS);
-  MultiTurn MT;
 
-  #define SETUP_WHEEL_SENSOR setupTLE();
-  #define GET_WHEEL_POS (-MT.setValue(getWheelPos()))
-  #define CENTER_WHEEL MT.zero();
-  #define SET_WHEEL_POSITION(val) MT.setPosition(-val)
-  
-
-  inline int16_t getWheelPos(){
-    SPI.begin();
-    int16_t v=sensor.readInteger()>>(16-STEER_BITDEPTH);
-    SPI.end();
-    return v;
-  }
-  
-  void setupTLE()
-  {
-     //4MHz on pin 5 for TLE5010
-      TCCR3A=(0<<COM3A1) | (1<<COM3A0) | (0<<COM3B1) | (0<<COM3B0) | (0<<COM3C1) | (0<<COM3C0) | (0<<WGM31) | (0<<WGM30);
-      TCCR3B=(0<<ICNC3) | (0<<ICES3) | (0<<WGM33) | (1<<WGM32) | (0<<CS32) | (0<<CS31) | (1<<CS30);
-      OCR3A=1;
-      pinMode(5, OUTPUT);
-
-      sensor.begin();
-      SPI.end();
-
-      sensor.atan2FuncInt=atan2_fix; 
-  
-      delayMicroseconds(10000); //let sensor start
-  
-      GET_WHEEL_POS;
-  }
-#endif
 
 
 //analogReadFast(PIN_WHEEL)
@@ -243,11 +190,20 @@ void autoFindCenter(int force=AFC_FORCE, int period=AFC_PERIOD, int16_t treshold
 #endif
 //-------------------------------------------------------------------------------------
 
+#define MCP23017_ADDR 0x20
+#define IODIRB   0x01
+#define GPIOB    0x13
+
 void setup() {
 
   Serial.begin(9600);
   //Serial.setTimeout(50);
   Serial.println("f");
+
+  Wire.begin();
+
+  // Configure GPB0–GPB7 en entrée
+  writeMCP(IODIRB, 0xFF); // 1 = entrée
 
 
   //Steering axis sensor setup
@@ -338,6 +294,15 @@ void setup() {
   for(uint8_t i=0;i<sizeof(bm_cols);i++)
     pinMode(bm_cols[i], INPUT_PULLUP);
   #endif
+
+  /*#ifdef H_SCHIFTER_START_PIN
+    mcp.begin_I2C(); // Adresse par défaut 0x20
+    for (int i = 0; i<6 ; i++)
+    {
+      mcp.pinMode(i + H_SCHIFTER_START_PIN, INPUT_PULLUP); 
+      Serial.println(i);
+    }
+  #endif*/
   
   //motor setup
   motor.begin();
@@ -353,6 +318,25 @@ void setup() {
 
   while(true)
     mainLoop();
+}
+
+void writeMCP(uint8_t reg, uint8_t val) {
+  Wire.beginTransmission(MCP23017_ADDR);
+  Wire.write(reg);
+  Wire.write(val);
+  Wire.endTransmission();
+}
+
+uint8_t readMCP(uint8_t reg) {
+  Wire.beginTransmission(MCP23017_ADDR);
+  Wire.write(reg);
+  Wire.endTransmission();
+
+  Wire.requestFrom(MCP23017_ADDR, 1);
+  if (Wire.available()) {
+    return Wire.read();
+  }
+  return 0x00;
 }
 
 void mainLoop() {
@@ -415,7 +399,7 @@ void mainLoop() {
       }
   }
   
-  processSerial();
+ // processSerial();
 }
 
 //Processing endstop and force feedback
@@ -999,6 +983,35 @@ void readButtons()
   for(i=0;i<sizeof(dpb);i++)
     bitWrite(*((uint32_t *)d), DPB_1ST_BTN-1+i, (*portInputRegister(digitalPinToPort(dpb[i])) & digitalPinToBitMask(dpb[i]))==0 );
 #endif
+
+#ifdef H_SHIFTER_WIRE
+  uint8_t state = readMCP(GPIOB);
+
+  for (uint8_t i = 0; i < 7; i++) {
+    bool pressed = !(state & (1 << i)); // inversé : 0 = appuyé
+
+    if (pressed) {
+      Serial.print("Bouton sur GPB");
+      Serial.print(i);
+      Serial.println(" appuyé");
+      bitWrite(*((uint32_t *)d), 5-1+i, true);
+    }
+  }
+#endif
+
+/*#ifdef H_SCHIFTER_START_PIN
+  for (int i = 0; i<=6 ; i++)
+  {
+      if (mcp.digitalRead(i + H_SCHIFTER_START_PIN) == LOW) {
+   // Bouton appuyé → LED ON
+        Serial.println(i);
+    }
+  }  
+
+  delay(5); // Anti-rebond simple
+#endif*/
+
+
 
 //button matrix
 #ifdef BM

@@ -54,8 +54,8 @@
 
 //---------------------------I2C----------------------------------------
 //bitbang I2С pins - for MCP23017 and ADS1015
-#define I2C_PIN_SDA   2  //any free pins
-#define I2C_PIN_SCL   7
+#define I2C_PIN_SDA   12  //any free pins
+#define I2C_PIN_SCL   13
 
 #define I2C_DELAY 1
 //---------------------------analog axes---------------------------
@@ -140,7 +140,8 @@
 
 //----------------------------Buttons-------------------------------------
 //different ways of connecting buttons. Choose only one!
-#define BUTTONS_TYPE BT_74HC165       //Use 74HC165 shift registers
+//#define BUTTONS_TYPE BT_74HC165       //Use 74HC165 shift registers
+//
 //#define BUTTONS_TYPE BT_MCP23017    //Use MCP23017 I2C port expanders
 //#define BUTTONS_TYPE BT_CD4021B     //Use CD4021B shift registers
 //#define BUTTONS_TYPE BT_PCF857x     //Use PCF857x I2C port expanders
@@ -183,8 +184,10 @@
 
 //buttons directly connected to pins 
 #define DPB        //Enable
-#define DPB_PINS       2,3
-#define DPB_1ST_BTN    1
+#define DPB_PINS       3,4
+#define DPB_1ST_BTN    2
+
+#define H_SCHIFTER_START_PIN 8
 
 
 //button matrix
@@ -236,4 +239,9 @@
 //#define AFC_NORANGE                           //Uncomment to disable range setting
 #define AFC_RANGE_FIX 1                         //range will be decreased by this value (in degrees), to prevent wheel kicking on limiters.
 #define AFC_BUTTON    0    
+
+#define H_SHIFTER_WIRE
+
+
+
                      //Button # to start (1-32, 0 if not needed)
