@@ -35,6 +35,8 @@ SOFTWARE.
 #include "motor.h"
 #include "settings.h"
 
+#include <Adafruit_MCP23X17.h>
+
 #include <Wire.h>
 
 //#include <Wire.h>
@@ -190,9 +192,8 @@ void autoFindCenter(int force=AFC_FORCE, int period=AFC_PERIOD, int16_t treshold
 #endif
 //-------------------------------------------------------------------------------------
 
-#define MCP23017_ADDR 0x20
-#define IODIRB   0x01
-#define GPIOB    0x13
+// Crée une instance de MCP23017
+Adafruit_MCP23X17 mcp;
 
 void setup() {
 
@@ -202,8 +203,16 @@ void setup() {
 
   Wire.begin();
 
+    mcp.begin_I2C(); // Adresse 0x20 par défaut, ajuster si A0-A2 sont changés
+
+  // Configure les 8 broches du port B en entrée avec pull-up
+  for (uint8_t i = 0; i < 8; i++) {
+    mcp.pinMode(i + 8, INPUT_PULLUP);         // Port B : broches 8 à 15
+    //mcp.pullUp(i + 8, HIGH);           // Active la résistance pull-up interne
+  }
+
   // Configure GPB0–GPB7 en entrée
-  writeMCP(IODIRB, 0xFF); // 1 = entrée
+ // writeMCP(IODIRB, 0xFF); // 1 = entrée
 
 
   //Steering axis sensor setup
@@ -320,7 +329,7 @@ void setup() {
     mainLoop();
 }
 
-void writeMCP(uint8_t reg, uint8_t val) {
+/*void writeMCP(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(MCP23017_ADDR);
   Wire.write(reg);
   Wire.write(val);
@@ -337,7 +346,7 @@ uint8_t readMCP(uint8_t reg) {
     return Wire.read();
   }
   return 0x00;
-}
+}*/
 
 void mainLoop() {
 
@@ -985,18 +994,11 @@ void readButtons()
 #endif
 
 #ifdef H_SHIFTER_WIRE
-  uint8_t state = readMCP(GPIOB);
-
-  for (uint8_t i = 0; i < 7; i++) {
-    bool pressed = !(state & (1 << i)); // inversé : 0 = appuyé
-
-    if (pressed) {
-      Serial.print("Bouton sur GPB");
-      Serial.print(i);
-      Serial.println(" appuyé");
-      bitWrite(*((uint32_t *)d), 5-1+i, true);
-    }
+  for (uint8_t i = 0; i < 8; i++) {
+    uint8_t state = !mcp.digitalRead(i + 8); // Lecture des broches B0 à B7
+    bitWrite(*((uint32_t *)d), 4-1+i, state);
   }
+  Serial.println();
 #endif
 
 /*#ifdef H_SCHIFTER_START_PIN
